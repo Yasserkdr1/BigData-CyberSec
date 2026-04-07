@@ -1,0 +1,12 @@
+# Ne pas publier environnement virtuel
+venv/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Fichiers sensibles / data
+cybersecurity_threat_detection_logs.csv
+# Logs
+*.log

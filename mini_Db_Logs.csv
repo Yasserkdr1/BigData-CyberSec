@@ -1,0 +1,11 @@
+timestamp,source_ip,dest_ip,protocol,action,threat_label,log_type,bytes_transferred,user_agent,request_path
+2026-04-06T20:10:01,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1200,Mozilla/5.0,/login
+2026-04-06T20:10:02,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1300,Mozilla/5.0,/login
+2026-04-06T20:10:03,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1400,Mozilla/5.0,/login
+2026-04-06T20:10:04,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1500,Mozilla/5.0,/login
+2026-04-06T20:10:05,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1600,Mozilla/5.0,/login
+2026-04-06T20:10:06,185.10.10.50,192.168.1.10,HTTP,blocked,suspicious,firewall,1700,Mozilla/5.0,/admin
+2026-04-06T20:10:07,91.22.33.44,192.168.1.20,HTTP,allowed,suspicious,ids,2500,SQLMap/1.6-dev,/search?id=1 OR 1=1
+2026-04-06T20:10:08,77.88.99.11,192.168.1.30,TCP,blocked,suspicious,ids,3000,Nmap Scripting Engine,/
+2026-04-06T20:10:09,66.77.88.99,192.168.1.40,HTTP,blocked,suspicious,firewall,2800,Mozilla/5.0,/wp-login.php
+2026-04-06T20:10:10,55.66.77.88,192.168.1.50,HTTP,allowed,suspicious,application,3200,Mozilla/5.0,/upload?phpmyadmin
