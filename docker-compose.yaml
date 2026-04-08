@@ -11,6 +11,7 @@ services:
       - "7077:7077"   # Spark Master
       - "16010:16010" # Interface web HBase
       - "9092:9092"   # NOUVEAU : Port Kafka pour ton script Python !
+      - "9000:9000"
     stdin_open: true
     tty: true
     networks:
