@@ -12,6 +12,9 @@ services:
       - "16010:16010" # Interface web HBase
       - "9092:9092"   # NOUVEAU : Port Kafka pour ton script Python !
       - "9000:9000"
+      - "9090:9090"   # HBASE THRIFT SERVER
+      - "2181:2181"   # Zookeeper
+      - "16000:16000" # HBase Master RPC
     stdin_open: true
     tty: true
     networks:
