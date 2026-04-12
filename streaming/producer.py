@@ -1,43 +1,47 @@
+import csv
 import json
 import time
-import pandas as pd
 from kafka import KafkaProducer
 
-CSV_FILE = "cybersecurity_threat_detection_logs.csv"   # mets ici le bon nom du fichier
-KAFKA_BROKER = "localhost:9092"
-TOPIC = "cybersecurity-logs"
+# Configuration Kafka
+KAFKA_BROKER = "localhost:9092" # ou "hadoop-master:9092" si lancé depuis un conteneur
+KAFKA_TOPIC = "cybersecurity-logs"
+CSV_FILE_PATH = "attacks.csv"
 
+def json_serializer(data):
+    return json.dumps(data).encode("utf-8")
+
+# Initialisation du producer Kafka
 producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BROKER,
-    key_serializer=lambda k: k.encode("utf-8"),
-    value_serializer=lambda v: json.dumps(v).encode("utf-8")
+    bootstrap_servers=[KAFKA_BROKER],
+    value_serializer=json_serializer
 )
 
-df = pd.read_csv(CSV_FILE)
+print(f"🚀 Début de la lecture du fichier {CSV_FILE_PATH}...")
+print(f"📡 Envoi des données vers le topic Kafka '{KAFKA_TOPIC}'...")
 
-# Pour tester au début, on prend seulement 20 lignes
-df = df.head(500)
+try:
+    with open(CSV_FILE_PATH, mode='r', encoding='utf-8') as file:
+        # csv.DictReader convertit automatiquement chaque ligne en dictionnaire basé sur l'en-tête
+        csv_reader = csv.DictReader(file)
+        
+        for row in csv_reader:
+            # On s'assure que bytes_transferred est un entier (si la colonne existe)
+            if 'bytes_transferred' in row and row['bytes_transferred'].isdigit():
+                row['bytes_transferred'] = int(row['bytes_transferred'])
+                
+            # Envoi du dictionnaire en JSON vers Kafka
+            producer.send(KAFKA_TOPIC, row)
+            print(f"Envoyé : {row['source_ip']} -> {row['request_path']} ({row.get('action', '')})")
+            
+            # Petite pause pour simuler un flux en temps réel (streaming)
+            time.sleep(1)
 
-for _, row in df.iterrows():
-    message = {
-        "timestamp": str(row["timestamp"]),
-        "source_ip": str(row["source_ip"]),
-        "dest_ip": str(row["dest_ip"]),
-        "protocol": str(row["protocol"]),
-        "action": str(row["action"]),
-        "threat_label": str(row["threat_label"]),
-        "log_type": str(row["log_type"]),
-        "bytes_transferred": int(row["bytes_transferred"]),
-        "user_agent": str(row["user_agent"]),
-        "request_path": str(row["request_path"])
-    }
-
-    key = message["source_ip"]   # très important
-    producer.send(TOPIC, key=key, value=message)
-    print(f"sent -> key={key}, value={message}")
-
-    time.sleep(0.4)  # simulation de streaming
-
-producer.flush()
-producer.close()
-print("Envoi terminé.")
+except FileNotFoundError:
+    print(f"❌ Erreur : Le fichier {CSV_FILE_PATH} est introuvable à la racine du projet.")
+except Exception as e:
+    print(f"❌ Erreur inattendue : {e}")
+finally:
+    producer.flush()
+    producer.close()
+    print("✅ Fin de l'envoi des logs.")
