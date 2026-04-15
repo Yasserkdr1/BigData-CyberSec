@@ -41,6 +41,38 @@ services:
     tty: true
     networks:
       - hadoop-network
+  hadoop-worker3:
+    image: liliasfaxi/hadoop-cluster:latest
+    container_name: hadoop-worker3
+    hostname: hadoop-worker3
+    ports:
+      - "8042:8042"
+    stdin_open: true
+    tty: true
+    networks:
+      - hadoop-network
+  hadoop-worker4:
+    image: liliasfaxi/hadoop-cluster:latest
+    container_name: hadoop-worker4
+    hostname: hadoop-worker4
+    ports:
+      - "8043:8042"
+    stdin_open: true
+    tty: true
+    networks:
+      - hadoop-network
+  hadoop-worker5:
+    image: liliasfaxi/hadoop-cluster:latest
+    container_name: hadoop-worker5
+    hostname: hadoop-worker5
+    ports:
+      - "8044:8042"
+    stdin_open: true
+    tty: true
+    networks:
+      - hadoop-network
+
+
   cassandra:
     image: cassandra:latest
     container_name: cassandra
@@ -48,7 +80,8 @@ services:
     ports:
       - "9042:9042"
     environment:
-      CASSANDRA_CLUSTER_NAME: CyberCluster
+      MAX_HEAP_SIZE: 2G
+      HEAP_NEWSIZE: 400M
     networks:
       - hadoop-network
 networks:

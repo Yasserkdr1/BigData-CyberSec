@@ -2,8 +2,12 @@ import json
 import time
 import pandas as pd
 from kafka import KafkaProducer
+from pathlib import Path
 
-CSV_FILE = "cybersecurity_threat_detection_logs.csv"   # mets ici le bon nom du fichier
+
+BASE_DIR = Path(__file__).resolve().parent
+CSV_FILE = BASE_DIR.parent / "cybersecurity_threat_detection_logs.csv"
+
 KAFKA_BROKER = "localhost:9092"
 TOPIC = "cybersecurity-logs"
 
@@ -16,7 +20,7 @@ producer = KafkaProducer(
 df = pd.read_csv(CSV_FILE)
 
 # Pour tester au début, on prend seulement 20 lignes
-df = df.head(500)
+df = df.head(3000)
 
 for _, row in df.iterrows():
     message = {

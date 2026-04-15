@@ -11,7 +11,7 @@ cluster = Cluster([CASSANDRA_HOST], port=CASSANDRA_PORT)
 session = cluster.connect(CASSANDRA_KEYSPACE)
 
 prepared_alerts = session.prepare("""
-    SELECT alert_date, inserted_at, event_time, alert_type, source_ip, request_path, count_value
+    SELECT alert_date, inserted_at, event_time, alert_type, source_ip, request_path, count_value,protocol,user_agent,dest_ip
     FROM realtime_alerts_live
     WHERE alert_date = ?
     LIMIT 200
@@ -299,6 +299,9 @@ HTML_TEMPLATE = """
                             <th>Heure Détection</th>
                             <th>Type d'Alerte</th>
                             <th>IP Source</th>
+                            <th>IP Destination</th>
+                            <th>Protocole</th>
+                            <th>User-Agent</th> 
                             <th>Cible / Chemin</th>
                             <th>Détails</th>
                         </tr>
@@ -345,6 +348,9 @@ HTML_TEMPLATE = """
                         <td>${alert.display_time || "N/A"}</td>
                         <td><span class="badge ${badgeClass(alert.alert_type)}">${alert.alert_type}</span></td>
                         <td>${alert.src_ip || "-"}</td>
+                        <td>${alert.dest_ip || "-"}</td>
+                        <td>${alert.protocol || "-"}</td>
+                        <td>${alert.user_agent || "-"}</td>
                         <td>${alert.path || "-"}</td>
                         <td>${alert.count_value !== null && alert.count_value !== undefined ? alert.count_value : "-"}</td>
                     </tr>
@@ -419,7 +425,10 @@ def get_alerts():
                 "alert_type": r.alert_type,
                 "src_ip": r.source_ip,
                 "path": r.request_path,
-                "count_value": r.count_value
+                "count_value": r.count_value,
+                "protocol": r.protocol,
+                "user_agent": r.user_agent,
+                "dest_ip": r.dest_ip
             })
 
         return jsonify(alerts_list)
