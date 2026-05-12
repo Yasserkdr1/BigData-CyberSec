@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import current_timestamp
 from pyspark.sql.functions import (
     col, from_json, lower, when, count, window,
     lit, to_timestamp, coalesce, sum as spark_sum
@@ -49,7 +50,9 @@ parsed_df = raw_df.selectExpr(
     from_json(col("json_value"), schema).alias("data")
 ).select("kafka_key", "data.*")
 
-stream_df = parsed_df.withColumn("event_time", to_timestamp(col("timestamp")))
+stream_df = stream_df = parsed_df \
+    .withColumn("event_time", to_timestamp(col("timestamp"))) \
+    .withColumn("detection_time", current_timestamp())
 
 ua = lower(col("user_agent"))
 path = lower(col("request_path"))
@@ -110,9 +113,9 @@ bruteforce_candidates = stream_df.filter(
 )
 
 bruteforce_alerts = bruteforce_candidates \
-    .withWatermark("event_time", "2 minutes") \
+    .withWatermark("detection_time", "2 minutes") \
     .groupBy(
-        window(col("event_time"), "1 minute"),  
+        window(col("detection_time"), "1 minute", "10 seconds"),
         col("source_ip"),
         col("protocol")
     ) \
