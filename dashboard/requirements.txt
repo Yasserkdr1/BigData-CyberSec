@@ -1,0 +1,4 @@
+Flask==3.0.3
+cassandra-driver==3.29.2
+happybase==1.2.0
+thriftpy2==0.4.20

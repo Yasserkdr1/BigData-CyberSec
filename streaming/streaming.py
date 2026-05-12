@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import current_timestamp
 from pyspark.sql.functions import (
     col, from_json, lower, when, count, window,
     lit, to_timestamp, coalesce, sum as spark_sum
@@ -49,7 +50,9 @@ parsed_df = raw_df.selectExpr(
     from_json(col("json_value"), schema).alias("data")
 ).select("kafka_key", "data.*")
 
-stream_df = parsed_df.withColumn("event_time", to_timestamp(col("timestamp")))
+stream_df = stream_df = parsed_df \
+    .withColumn("event_time", to_timestamp(col("timestamp"))) \
+    .withColumn("detection_time", current_timestamp())
 
 ua = lower(col("user_agent"))
 path = lower(col("request_path"))
@@ -97,6 +100,8 @@ instant_alerts = stream_df.withColumn(
  .select(
     col("source_ip").alias("src_ip"),
     col("dest_ip").alias("dest_ip"),
+    col("protocol"),
+    col("user_agent"),
     col("request_path").alias("path"),
     col("alert_type"),
     lit(None).cast("int").alias("count_value"),
@@ -104,39 +109,40 @@ instant_alerts = stream_df.withColumn(
 )
 
 bruteforce_candidates = stream_df.filter(
-    (action_col == "blocked") &
-    (
-        path.contains("/login") |
-        path.contains("/admin") |
-        path.contains("/wp-login") |
-        path.contains("/auth") |
-        path.contains("/api/login")
-    )
+    (action_col == "blocked")
 )
 
 bruteforce_alerts = bruteforce_candidates \
-    .withWatermark("event_time", "2 minutes") \
-    .groupBy(window(col("event_time"), "1 minute"), col("source_ip")) \
+    .withWatermark("detection_time", "2 minutes") \
+    .groupBy(
+        window(col("detection_time"), "1 minute", "10 seconds"),
+        col("source_ip"),
+        col("protocol")
+    ) \
     .agg(count("*").alias("failed_attempts")) \
     .filter(col("failed_attempts") >= 5) \
     .select(
         col("source_ip").alias("src_ip"),
         lit("-").alias("dest_ip"),
-        lit("/login,/admin,/wp-login,/auth,/api/login").alias("path"),
-        lit("BRUTE_FORCE").alias("alert_type"),
+        col("protocol"),
+        lit("-").alias("user_agent"),
+        lit("authentication-target").alias("path"),
+        lit("REPEATED_BLOCKED_ACTIVITY").alias("alert_type"),
         col("failed_attempts").cast("int").alias("count_value"),
         col("window.end").alias("event_time")
     )
 
 volume_alerts = stream_df \
     .withWatermark("event_time", "30 seconds") \
-    .groupBy(window(col("event_time"), "10 seconds"), col("source_ip")) \
+    .groupBy(window(col("event_time"), "10 seconds"), col("source_ip"),col("protocol")) \
     .agg(spark_sum("bytes_transferred").alias("total_bytes")) \
     .filter(col("total_bytes") > 10 * 1024 * 1024) \
     .select(
         col("source_ip").alias("src_ip"),
         lit("-").alias("dest_ip"),
         lit("high-volume-transfer").alias("path"),
+        col("protocol"),
+        lit("-").alias("user_agent"),
         lit("DATA_EXFILTRATION").alias("alert_type"),
         col("total_bytes").cast("int").alias("count_value"),
         col("window.end").alias("event_time")
@@ -154,8 +160,8 @@ def write_partition(rows):
 
     stmt = session.prepare(f"""
         INSERT INTO {CASSANDRA_TABLE}
-        (alert_date, inserted_at, event_id, source_ip, dest_ip, alert_type, request_path, count_value, event_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (alert_date, inserted_at, event_id, source_ip, dest_ip, alert_type, request_path, count_value, event_time, protocol,user_agent)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
     """)
 
     futures = []
@@ -174,7 +180,9 @@ def write_partition(rows):
             r.alert_type,
             r.path if r.path is not None else "-",
             int(r.count_value) if r.count_value is not None else None,
-            event_time
+            event_time,
+            r.protocol if r.protocol is not None else "-",
+            r.user_agent if r.user_agent is not None else "-"
         )))
 
     for f in futures:
@@ -191,7 +199,7 @@ query = all_alerts.writeStream \
     .foreachBatch(write_batch) \
     .outputMode("append") \
     .trigger(processingTime="1 second") \
-    .option("checkpointLocation", "/tmp/spark-checkpoints/realtime-alerts-fast") \
+    .option("checkpointLocation", "hdfs://hadoop-master:9000/tmp/spark-checkpoints/realtime-alerts-fast-v3") \
     .start()
 
 query.awaitTermination()

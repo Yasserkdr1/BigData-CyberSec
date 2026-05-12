@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSec Lambda SOC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="sidebar">
+  <div class="brand">
+    <h1>
+      <!-- Icône shield/alerte SOC -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" 
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      CyberSec SOC
+    </h1>
+    <p>Lambda Architecture</p>
+  </div>
+
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle">
+    <!-- Icône soleil/lune toggle -->
+    <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    Mode clair
+  </button>
+
+  <div class="nav-menu">
+    <button class="nav-btn active" onclick="switchView('streaming-view', this)">
+      <!-- Icône activité temps réel (pulse/activity) -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      Temps réel
+      <div class="nav-indicator"></div>
+    </button>
+
+    <button class="nav-btn" onclick="switchView('analytics-view', this)">
+      <!-- Icône bar chart stats -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Stats Batch
+      <div class="nav-indicator"></div>
+    </button>
+
+    <button class="nav-btn" onclick="switchView('ip-view', this)">
+      <!-- Icône search/investigation -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Investigation IP
+      <div class="nav-indicator"></div>
+    </button>
+  </div>
+</div>
+<div class="main-wrapper">
+    <section id="streaming-view" class="view-section active">
+        <div class="view-header"><div class="view-title"><h2>Flux d'alertes temps réel</h2><p>Vue opérationnelle des alertes récentes détectées en temps réel.</p></div><div style="color:var(--green);font-size:13px;font-weight:900;" id="last-refresh-live">MAJ: --:--:--</div></div>
+        <div class="dashboard-grid">
+            <div class="card span-3"><div class="kpi-label">Taille de page</div><select id="live-page-size-select" class="select" onchange="setLivePageSize()"><option value="10">10 alertes / page</option><option value="50">50 alertes / page</option><option value="100" selected>100 alertes / page</option><option value="200">200 alertes / page</option></select><div class="kpi-sub">Les alertes restent triées de la plus récente à la plus ancienne.</div></div>
+            <div class="card span-3"><div class="kpi-label">Alertes live aujourd’hui</div><div class="kpi-value" id="kpi-live-count">0</div><div class="kpi-sub">Total stocké dans Cassandra pour la date du jour.</div></div>
+            <div class="card span-3"><div class="kpi-label">IPs sources live</div><div class="kpi-value" id="kpi-live-ips">0</div><div class="kpi-sub">Attaquants uniques dans les alertes affichées.</div></div>
+            <div class="card span-3"><div class="kpi-label">Dernière alerte</div><div class="kpi-value" id="kpi-live-last" style="font-size:24px;">--:--:--</div><div class="kpi-sub">Dernière détection reçue.</div></div>
+            <div class="panel span-12"><h3 class="section-title">Journal des incidents live</h3><p class="section-sub">Clique sur une IP source pour ouvrir sa fiche. Cette table vient de Cassandra. La pagination affiche toujours les alertes les plus récentes en premier.</p><div class="pagination-bar"><div class="pagination-left"><span class="pagination-info" id="live-pagination-info">Page 1 / 1</span><span class="pagination-info" id="live-range-info">0 alerte affichée</span></div><div class="pagination-right"><button class="page-btn" id="live-prev-btn" onclick="changeLivePage(-1)">← Précédent</button><button class="page-btn" id="live-next-btn" onclick="changeLivePage(1)">Suivant →</button></div></div><div class="table-wrapper"><table><thead><tr><th>Heure</th><th>Alerte</th><th>IP source</th><th>IP destination</th><th>Protocole</th><th>Chemin / cible</th><th>Détail</th></tr></thead><tbody id="alerts-table-body"><tr><td colspan="7" class="empty">Chargement des alertes live...</td></tr></tbody></table></div></div>
+        </div>
+    </section>
+
+    <section id="analytics-view" class="view-section">
+        <div class="view-header"><div class="view-title"><h2>Analyse des menaces archivées</h2><p>Synthèse des menaces détectées à partir des logs archivés.</p></div><div style="color:var(--blue);font-size:13px;font-weight:900;" id="last-refresh-batch">MAJ: --:--:--</div></div>
+        <div class="dashboard-grid">
+            <div class="card span-2"><div class="kpi-label">IP sources menaçantes</div><div class="kpi-value" id="kpi-ip-reputation">0</div><div class="kpi-sub">Total d’IP sources.</div></div>
+            <div class="card span-2"><div class="kpi-label">IP critiques à surveiller</div><div class="kpi-value" id="kpi-high-risk">0</div><div class="kpi-sub">Score batch ≥ 60.</div></div>
+            <div class="card span-2"><div class="kpi-label">Total des machines ciblées</div><div class="kpi-value" id="kpi-targets">0</div><div class="kpi-sub">IP destinations attaquées.</div></div>
+            <div class="card span-2"><div class="kpi-label">Types d’attaques détectés</div><div class="kpi-value" id="kpi-patterns">0</div><div class="kpi-sub">Nombre de signatures d’attaque observées.</div></div>
+            <div class="card span-4"><div class="kpi-label">Periodes avec alertes</div><div class="kpi-value" id="kpi-timeline">0</div><div class="kpi-sub">Periodes ou le batch a détecté au moins une alerte.</div></div>
+            <div class="panel span-4"><h3 class="section-title">Distribution des risques IP</h3><p class="section-sub">Répartition des IP par niveau de risque.</p><div class="chart-container"><canvas id="riskDistributionChart"></canvas></div></div>
+            <div class="panel span-8"><h3 class="section-title">Top IPs dangereuses </h3><p class="section-sub">Classement par score de réputation.</p><div class="chart-container"><canvas id="highRiskChart"></canvas></div></div>
+            <div class="panel span-6"><h3 class="section-title">Machines les plus ciblées</h3><p class="section-sub">Vue rapide des destinations recevant le plus d’alertes.</p><div class="chart-container"><canvas id="targetChart"></canvas></div></div>
+            <div class="panel span-6"><h3 class="section-title">Patterns d'attaques</h3><p class="section-sub">Fréquence globale des types d'attaques.</p><div class="chart-container"><canvas id="patternsChart"></canvas></div></div>
+            <div class="panel span-12">
+                <h3 class="section-title">Timeline minute par minute des menaces archivées</h3>
+                <div class="timeline-scroll"><div class="timeline-chart-container"><canvas id="timelineChart"></canvas></div></div>
+                <div class="timeline-note">Granularité : 1 minute d’archivage HDFS. Courbes : Total, SQLi, Scan, XSS, Bruteforce, Exfiltration, File access, Admin probing, Sensitive file, Command injection.</div>
+            </div>
+            <div class="panel span-12"><h3 class="section-title">Menaces archivées par protocole</h3><div class="chart-container"><canvas id="protocolChart"></canvas></div></div>
+            <div class="panel span-12"><h3 class="section-title">Réputation des IP sources</h3><div class="table-wrapper"><table><thead><tr><th>IP source</th><th>Score batch</th><th>Niveau</th><th>Alertes archivées</th><th>Malicious</th><th>Suspicious</th><th>SQLi</th><th>XSS</th><th>Scan</th><th>Bruteforce</th><th>Exfiltration</th><th>Cibles</th><th>Dernière détection</th></tr></thead><tbody id="ip-reputation-body"><tr><td colspan="13" class="empty">Chargement...</td></tr></tbody></table></div></div>
+            <div class="panel span-6"><h3 class="section-title">Chemins d’attaque source → cible</h3><p class="section-sub">Vue agrégée des couples IP source → IP destination observés dans les logs archivés.</p><div class="table-wrapper"><table><thead><tr><th>IP source</th><th>Machine ciblée</th><th>Score relation</th><th>Alertes</th><th>SQLi</th><th>Scan</th><th>Bytes</th></tr></thead><tbody id="relations-body"><tr><td colspan="7" class="empty">Chargement...</td></tr></tbody></table></div></div>
+            <div class="panel span-6"><h3 class="section-title">Détail des machines ciblées</h3><p class="section-sub">Destinations attaquées avec score, nombre d’attaquants et catégories d’attaques reçues.</p><div class="table-wrapper"><table><thead><tr><th>Machine ciblée</th><th>Score</th><th>Alertes</th><th>Attaquants</th><th>Type dominant</th><th>Catégories détectées</th><th>Dernière activité</th></tr></thead><tbody id="targets-body"><tr><td colspan="7" class="empty">Chargement...</td></tr></tbody></table></div></div>
+        </div>
+    </section>
+
+    <section id="ip-view" class="view-section">
+        <div class="view-header"><div class="view-title"><h2>Investigation IP</h2><p>Analyse détaillée d’une IP source : alertes archivées et activité live .</p></div><div class="toolbar"><input class="input" id="ip-search-input" placeholder="Ex: 88.72.40.56"><button class="btn" onclick="searchIp()">Analyser IP</button></div></div>
+        <div id="ip-detail-container" class="empty">Clique sur une IP dans les statistiques ou saisis une IP pour voir son profil complet.</div>
+    </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body></html>
