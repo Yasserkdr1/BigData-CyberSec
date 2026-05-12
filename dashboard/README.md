@@ -1,39 +1,39 @@
-# Dashboard CyberSec Lambda SOC 
+# CyberSec Lambda SOC Dashboard
 
-Cette version sépare le dashboard en deux parties :
+This version separates the dashboard into two parts:
 
-- `app.py` : backend Flask, routes API, lecture Cassandra et HBase.
-- `templates/index.html` : structure HTML de l'interface.
-- `static/css/style.css` : style graphique du dashboard.
-- `static/js/dashboard.js` : logique frontend, appels `fetch`, graphiques Chart.js et interactions.
+- `app.py`: Flask backend, API routes, Cassandra and HBase reads.
+- `templates/index.html`: HTML structure of the interface.
+- `static/css/style.css`: Dashboard graphical styling.
+- `static/js/dashboard.js`: Frontend logic, `fetch` calls, Chart.js graphs, and interactions.
 
-## Lancement
+## Launch
 
-Depuis le dossier `dashboard` :
+From the `dashboard` folder:
 
 ```bash
 pip install -r requirements.txt
 python app.py
 ```
 
-Puis ouvrir :
+Then open:
 
 ```text
 http://localhost:5000
 ```
 
-## Dépendances système nécessaires
+## Required System Dependencies
 
-Avant de lancer le dashboard, vérifier que :
+Before launching the dashboard, ensure that:
 
-- Cassandra est accessible sur `127.0.0.1:9042`.
-- HBase Thrift est accessible sur `127.0.0.1:9090`.
-- Les tables HBase Batch existent et sont remplies.
-- La table Cassandra `cybersec.realtime_alerts_live` existe et reçoit les alertes Speed.
+- Cassandra is accessible at `127.0.0.1:9042`.
+- HBase Thrift is accessible at `127.0.0.1:9090`.
+- The HBase batch tables exist and are populated.
+- The Cassandra table `cybersec.realtime_alerts_live` exists and receives Speed layer alerts.
 
-## Routes principales
+## Main Routes
 
-- `/` : interface web.
-- `/api/alerts` : alertes live depuis Cassandra.
-- `/api/batch/analytics` : statistiques Batch depuis HBase.
-- `/api/threat/ip/<ip>` : fiche d'investigation d'une IP, combinant HBase et Cassandra.
+- `/`: Web interface.
+- `/api/alerts`: Live alerts from Cassandra.
+- `/api/batch/analytics`: Batch statistics from HBase.
+- `/api/threat/ip/<ip>`: IP investigation sheet, combining HBase and Cassandra data.

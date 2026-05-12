@@ -1,23 +1,23 @@
-# Documentation rapide — Projet CyberSec Big Data
+# Quick Documentation — CyberSec Big Data Project
 
-Ce dossier contient les étapes essentielles pour préparer, initialiser, démarrer et arrêter l'environnement du projet **Détection de menaces de cybersécurité en temps réel**.
+This folder contains the essential steps to prepare, initialize, start, and stop the environment for the **Real-Time Cybersecurity Threat Detection** project.
 
-## Ordre recommandé
+## Recommended Order
 
-1. Lire `01_PREREQUIS_INSTALLATION.md`
-2. Lancer les conteneurs avec Docker Compose
-3. Faire l'initialisation une seule fois avec `02_INITIALISATION_ENVIRONNEMENT.md`
-4. Démarrer le pipeline avec `03_DEMARRAGE_PIPELINE.md`
-5. Arrêter ou réinitialiser avec `04_ARRET_RESET.md`
+1. Read `01_PREREQUIS_INSTALLATION.md`
+2. Start the containers with Docker Compose
+3. Perform one-time initialization with `02_INITIALISATION_ENVIRONNEMENT.md`
+4. Start the pipeline with `03_DEMARRAGE_PIPELINE.md`
+5. Stop or reset with `04_ARRET_RESET.md`
 
-## Fichiers principaux du projet
+## Key Project Files
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `docker-compose.yaml` | Déclaration des conteneurs Docker |
-| `start_all.ps1` | Démarre les services et lance les jobs |
-| `stop_reset_close_all.ps1` | Stoppe les jobs, reset les données et ferme les services |
-| `archive_to_hdfs.py` | Archive les logs Kafka vers HDFS |
-| `streaming.py` | Détection temps réel Spark Streaming |
-| `batch_f.py` ou `batch_spark.py` | Traitement batch Spark et écriture HBase |
-| `app.py` | API/dashboard pour consulter les alertes |
+| `docker-compose.yaml` | Docker container declarations |
+| `start_all.ps1` / `start.sh` | Starts services and launches jobs (Windows / Linux) |
+| `stop_reset_close_all.ps1` / `stop_reset.sh` | Stops jobs, resets data, and shuts down services (Windows / Linux) |
+| `archive_to_hdfs.py` | Archives Kafka logs to HDFS |
+| `streaming.py` | Real-time detection with Spark Streaming |
+| `batch_f.py` | Spark batch processing and HBase writes |
+| `app.py` | API/dashboard for consulting alerts |

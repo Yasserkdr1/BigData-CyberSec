@@ -1,100 +1,107 @@
-# 03 — Démarrage du pipeline
+# 03 — Starting the Pipeline
 
-Le script `start_all.ps1` démarre les services et lance les jobs. Il ne crée pas les tables, le topic ou le keyspace : l'initialisation doit déjà être faite.
+The `start_all.ps1` / `start.sh` script starts the services and launches the jobs. It does not create tables, topics, or keyspaces: initialization must already be done.
 
-## 1. Vérifier les conteneurs
+## 1. Verify the Containers
 
-```powershell
+```bash
 docker ps
 ```
 
-Vérifier que les conteneurs utilisés par les scripts sont actifs :
+Check that the containers used by the scripts are active:
 
 - `hadoop-master`
 - `hadoop-worker3`
 - `hadoop-worker5`
 - `cassandra`
 
-## 2. Lancer le script de démarrage
+## 2. Launch the Startup Script
 
-Depuis le dossier contenant `start_all.ps1` :
+**Linux / macOS / WSL:**
+
+```bash
+chmod +x starting/start.sh
+./starting/start.sh
+```
+
+**Windows PowerShell:**
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\start_all.ps1
+.\starting\start_all.ps1
 ```
 
-Le script demande la durée entre deux exécutions batch. Exemple :
+The script will prompt for the duration between batch executions. Example:
 
 ```text
 100
 ```
 
-Selon la configuration actuelle, la boucle batch attend d'abord la durée choisie, puis exécute le batch, puis recommence.
+Depending on the current configuration, the batch loop first waits for the chosen interval, then executes the batch, then repeats.
 
-## 3. Vérifier les services
+## 3. Verify the Services
 
-HDFS :
+HDFS:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "hdfs dfsadmin -report"
 ```
 
-YARN :
+YARN:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "yarn node -list"
 ```
 
-Kafka :
+Kafka:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic cybersecurity-logs"
 ```
 
-HBase :
+HBase:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "echo 'status' | hbase shell -n"
 ```
 
-Thrift :
+Thrift:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "jps | grep -E 'Thrift|HMaster|HRegionServer'"
 ```
 
-## 4. Vérifier les jobs
+## 4. Verify the Jobs
 
-Streaming :
+Streaming:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "ps -ef | grep -E 'streaming.py|spark-submit' | grep -v grep"
 docker exec -it hadoop-master bash -lc "tail -f /root/streaming.log"
 ```
 
-Batch sur `hadoop-worker5` :
+Batch on `hadoop-worker5`:
 
-```powershell
+```bash
 docker exec hadoop-worker5 bash -lc "ps -ef | grep -E 'batch_loop.sh|batch_f.py|spark-submit' | grep -v grep"
 docker exec -it hadoop-worker5 bash -lc "tail -f /root/batch_global_final.log"
 ```
 
-Archivage HDFS sur `hadoop-worker3` :
+HDFS Archival on `hadoop-worker3`:
 
-```powershell
+```bash
 docker exec hadoop-worker3 bash -lc "ps -ef | grep -E 'archive_to_hdfs.py|spark-submit' | grep -v grep"
 docker exec -it hadoop-worker3 bash -lc "tail -f /root/archive_to_hdfs.log"
 ```
 
-## 5. Exécuter le batch une seule fois
+## 5. Execute the Batch Once (Single Run)
 
-```powershell
+```bash
 docker exec -d hadoop-worker5 bash -lc "nohup spark-submit --master local[*] /root/batch_f.py > /root/batch_global_final_once.log 2>&1"
 ```
 
-Suivre le log :
+Follow the log:
 
-```powershell
+```bash
 docker exec -it hadoop-worker5 bash -lc "tail -f /root/batch_global_final_once.log"
 ```

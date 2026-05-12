@@ -1,74 +1,74 @@
-# 01 — Pré-requis et installations nécessaires
+# 01 — Prerequisites and Required Installations
 
-Ce fichier décrit ce qui doit être disponible avant le lancement du cluster et des jobs.
+This file describes what must be available before launching the cluster and jobs.
 
-## 1. Côté machine Windows
+## 1. On the Windows Machine
 
-Installer :
+Install:
 
 - Docker Desktop
 - PowerShell
-- un éditeur de code, par exemple VS Code
+- A code editor, e.g. VS Code
 
-Vérifier Docker :
+Verify Docker:
 
 ```powershell
 docker --version
 docker compose version
 ```
 
-Autoriser temporairement l'exécution des scripts PowerShell :
+Temporarily allow PowerShell script execution:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-## 2. Côté `hadoop-master`
+## 2. Inside `hadoop-master`
 
-Le conteneur `hadoop-master` doit contenir :
+The `hadoop-master` container must contain:
 
 - Hadoop / HDFS / YARN
 - Spark
-- Kafka et Zookeeper
+- Kafka and Zookeeper
 - HBase
 - HBase Thrift Server
-- les commandes : `start-hadoop.sh`, `start-kafka-zookeeper.sh`, `start-hbase.sh`, `stop-hadoop.sh`, `stop-hbase.sh`
-- les fichiers Python nécessaires, notamment :
+- The commands: `start-hadoop.sh`, `start-kafka-zookeeper.sh`, `start-hbase.sh`, `stop-hadoop.sh`, `stop-hbase.sh`
+- The required Python files, notably:
   - `/root/streaming.py`
-  - `/root/archive_to_hdfs.py` si utilisé sur le master
+  - `/root/archive_to_hdfs.py` if used on the master
 
-Packages Python utiles sur le master :
+Useful Python packages on the master:
 
 ```bash
 pip install cassandra-driver happybase thriftpy2
 ```
 
-## 3. Côté `hadoop-worker5`
+## 3. Inside `hadoop-worker5`
 
-Ce worker exécute le job batch. Il doit contenir :
+This worker runs the batch job. It must contain:
 
 - Spark
 - Python 3
-- le fichier `/root/batch_f.py`
-- le driver HBase Python pour écrire dans HBase via Thrift
+- The file `/root/batch_f.py`
+- The Python HBase driver to write to HBase via Thrift
 
-Installation minimale :
+Minimal installation:
 
 ```bash
 pip install happybase thriftpy2
 ```
 
-## 4. Côté `hadoop-worker3`
+## 4. Inside `hadoop-worker3`
 
-Ce worker exécute l'archivage Kafka vers HDFS. Il doit contenir :
+This worker runs the Kafka-to-HDFS archival job. It must contain:
 
 - Spark
 - Python 3
-- le fichier `/root/archive_to_hdfs.py`
+- The file `/root/archive_to_hdfs.py`
 
-## 5. Côté workers Spark/YARN
+## 5. On Spark/YARN Workers
 
-Comme le streaming peut être exécuté via YARN, les workers qui exécutent les tâches Spark doivent avoir les dépendances Python utilisées par le job :
+Since streaming can be executed via YARN, the workers running Spark tasks must have the Python dependencies used by the job:
 
 ```bash
 pip install cassandra-driver
@@ -76,4 +76,4 @@ pip install cassandra-driver
 
 ## 6. Cassandra
 
-Le conteneur Cassandra doit être démarré et accessible sur le réseau Docker. Il doit contenir le keyspace et la table utilisés par le streaming, créés dans l'étape d'initialisation.
+The Cassandra container must be started and accessible on the Docker network. It must contain the keyspace and table used by streaming, created during the initialization step.

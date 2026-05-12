@@ -1,98 +1,98 @@
-# 02 — Initialisation de l'environnement
+# 02 — Environment Initialization
 
-Cette étape se fait au premier lancement, ou après un reset complet. Elle prépare HDFS, Kafka, Cassandra et HBase.
+This step is performed on the first launch, or after a full reset. It prepares HDFS, Kafka, Cassandra, and HBase.
 
-## 1. Démarrer les conteneurs
+## 1. Start the Containers
 
-Depuis le dossier contenant `docker-compose.yaml` :
+From the folder containing `docker-compose.yaml`:
 
-```powershell
+```bash
 docker compose up -d
 ```
 
-Vérifier :
+Verify:
 
-```powershell
+```bash
 docker ps
 ```
 
-Les conteneurs attendus pour ce projet sont notamment :
+The expected containers for this project include:
 
 - `hadoop-master`
 - `hadoop-worker3`
 - `hadoop-worker5`
 - `cassandra`
 
-Si ton `docker-compose.yaml` ne contient que `hadoop-master`, `hadoop-worker1` et `hadoop-worker2`, ajoute aussi les workers utilisés par tes scripts ou adapte les noms dans les scripts PowerShell.
+If your `docker-compose.yaml` only contains `hadoop-master`, `hadoop-worker1`, and `hadoop-worker2`, also add the workers used by your scripts or adapt the names in the PowerShell/Bash scripts.
 
-## 2. Démarrer les services une première fois
+## 2. Start the Services for the First Time
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "/root/start-hadoop.sh"
 docker exec hadoop-master bash -lc "/root/start-kafka-zookeeper.sh"
 docker exec hadoop-master bash -lc "start-hbase.sh"
 ```
 
-HBase peut prendre du temps. Attendre environ 60 secondes, puis vérifier :
+HBase can take a while. Wait approximately 60 seconds, then verify:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "echo 'status' | hbase shell -n"
 ```
 
-Démarrer Thrift :
+Start Thrift:
 
-```powershell
+```bash
 docker exec -d hadoop-master bash -lc "nohup hbase thrift start > /root/hbase-thrift.log 2>&1"
 ```
 
-## 3. Initialiser HDFS
+## 3. Initialize HDFS
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "hdfs dfsadmin -safemode leave || true"
 docker exec hadoop-master bash -lc "hdfs dfs -mkdir -p /data/cybersecurity/logs"
 docker exec hadoop-master bash -lc "hdfs dfs -mkdir -p /tmp/checkpoints"
 docker exec hadoop-master bash -lc "hdfs dfs -mkdir -p /tmp/spark-checkpoints"
 ```
 
-Vérifier :
+Verify:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "hdfs dfs -ls /data/cybersecurity"
 ```
 
-## 4. Créer le topic Kafka
+## 4. Create the Kafka Topic
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "kafka-topics.sh --bootstrap-server localhost:9092 --create --topic cybersecurity-logs --partitions 3 --replication-factor 1 || true"
 ```
 
-Vérifier :
+Verify:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic cybersecurity-logs"
 ```
 
-## 5. Créer le keyspace et la table Cassandra
+## 5. Create the Cassandra Keyspace and Table
 
-```powershell
+```bash
 docker exec cassandra cqlsh -e "CREATE KEYSPACE IF NOT EXISTS cybersec WITH replication = {'class':'SimpleStrategy','replication_factor':1};"
 ```
 
-```powershell
+```bash
 docker exec cassandra cqlsh -e "USE cybersec; CREATE TABLE IF NOT EXISTS realtime_alerts_live (alert_date date, inserted_at timestamp, event_id uuid, source_ip text, dest_ip text, alert_type text, request_path text, count_value int, event_time timestamp, protocol text, user_agent text, PRIMARY KEY ((alert_date), inserted_at, event_id)) WITH CLUSTERING ORDER BY (inserted_at DESC, event_id DESC) AND default_time_to_live = 86400;"
 ```
 
-Vérifier :
+Verify:
 
-```powershell
+```bash
 docker exec cassandra cqlsh -e "USE cybersec; DESCRIBE TABLE realtime_alerts_live;"
 ```
 
-## 6. Créer les tables HBase
+## 6. Create HBase Tables
 
-Créer un fichier d'initialisation dans le conteneur puis l'exécuter :
+Create an initialization file in the container, then execute it:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "cat > /tmp/init_hbase_tables.hb <<'EOF'
 create 'global_ip_stats', 'cf'
 create 'global_protocol_stats', 'cf'
@@ -109,10 +109,10 @@ EOF
 hbase shell -n /tmp/init_hbase_tables.hb"
 ```
 
-Si certaines tables existent déjà, utilise plutôt ton script de reset `stop_reset_close_all.ps1`, qui recrée les tables proprement.
+If some tables already exist, use the reset script `stop_reset_close_all.ps1` or `stop_reset.sh` instead, which recreates the tables cleanly.
 
-Vérifier :
+Verify:
 
-```powershell
+```bash
 docker exec hadoop-master bash -lc "echo 'list' | hbase shell -n"
 ```
